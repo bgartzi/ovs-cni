@@ -126,6 +126,9 @@ github.com/josharian/intern
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
+# github.com/k8snetworkplumbingwg/govdpa v0.1.4 => github.com/bgartzi/govdpa v0.0.0-20251203151835-136ae3fc3d12
+## explicit; go 1.17
+github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa
 # github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.1
 ## explicit; go 1.21
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
@@ -687,6 +690,7 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
+# github.com/k8snetworkplumbingwg/govdpa => github.com/bgartzi/govdpa v0.0.0-20251203151835-136ae3fc3d12
 # k8s.io/api => k8s.io/api v0.32.0
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.32.0
 # k8s.io/apimachinery => k8s.io/apimachinery v0.32.0

@@ -6,6 +6,7 @@ require (
 	github.com/containernetworking/plugins v1.5.1
 	github.com/golang/glog v1.2.4
 	github.com/j-keck/arping v1.0.3
+	github.com/k8snetworkplumbingwg/govdpa v0.1.4
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.1
 	github.com/k8snetworkplumbingwg/sriovnet v1.2.0
 	github.com/onsi/ginkgo/v2 v2.27.2
@@ -87,6 +88,7 @@ require (
 )
 
 replace (
+	github.com/k8snetworkplumbingwg/govdpa => github.com/bgartzi/govdpa v0.0.0-20251203151835-136ae3fc3d12
 	k8s.io/api => k8s.io/api v0.32.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.32.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.32.0
