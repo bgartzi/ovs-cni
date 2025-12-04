@@ -22,6 +22,7 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ns"
+	"github.com/k8snetworkplumbingwg/govdpa/pkg/kvdpa"
 	"github.com/k8snetworkplumbingwg/sriovnet"
 	"github.com/vishvananda/netlink"
 )
@@ -179,7 +180,7 @@ func GetNetRepresentor(deviceID string) (string, error) {
 
 // setupKernelSriovContIface moves smartVF into container namespace,
 // configures the smartVF and also fills in the contIface fields
-func setupKernelSriovContIface(contNetns ns.NetNS, contIface *current.Interface, deviceID string, pfLink netlink.Link, vfIdx int, ifName string, hwaddr net.HardwareAddr, mtu int) error {
+func setupKernelSriovContIface(contNetns ns.NetNS, contIface *current.Interface, deviceID string, pfLink netlink.Link, vfIdx int, ifName string, hwaddr net.HardwareAddr, mtu int, vdpaDevName string) error {
 	// get smart VF netdevice from PCI
 	vfNetdevices, err := sriovnet.GetNetDevicesFromPci(deviceID)
 	if err != nil {
@@ -195,8 +196,14 @@ func setupKernelSriovContIface(contNetns ns.NetNS, contIface *current.Interface,
 	// if MAC address is provided, set it to the VF by using PF netlink
 	// which is accessible in the host namespace, not in the container namespace
 	if hwaddr != nil {
-		if err := netlink.LinkSetVfHardwareAddr(pfLink, vfIdx, hwaddr); err != nil {
-			return err
+		if vdpaDevName != "" {
+			if err := kvdpa.SetVdpaDeviceMac(vdpaDevName, hwaddr); err != nil {
+				return err
+			}
+		} else {
+			if err := netlink.LinkSetVfHardwareAddr(pfLink, vfIdx, hwaddr); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -298,6 +305,15 @@ func SetupSriovInterface(contNetns ns.NetNS, containerID, ifName, mac string, mt
 		return nil, nil, err
 	}
 
+	var vdpaDevName string
+	vdpaDevs, err := kvdpa.GetVdpaDevicesByPciAddress(fmt.Sprintf("pci/%s", deviceID))
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to run vdpa netlink command")
+	}
+	if len(vdpaDevs) != 0 {
+		vdpaDevName = vdpaDevs[0].Name()
+	}
+
 	// make sure PF netlink and VF index are valid
 	if len(pfLink.Attrs().Vfs) < vfIdx || pfLink.Attrs().Vfs[vfIdx].ID != vfIdx {
 		return nil, nil, fmt.Errorf("failed to get vf info from %s at index %d with Vfs %v", pfIface, vfIdx, pfLink.Attrs().Vfs)
@@ -322,7 +338,7 @@ func SetupSriovInterface(contNetns ns.NetNS, containerID, ifName, mac string, mt
 
 	if !userspaceMode {
 		// configure the smart VF netdevice directly in the container namespace
-		if err = setupKernelSriovContIface(contNetns, contIface, deviceID, pfLink, vfIdx, ifName, hwaddr, mtu); err != nil {
+		if err = setupKernelSriovContIface(contNetns, contIface, deviceID, pfLink, vfIdx, ifName, hwaddr, mtu, vdpaDevName); err != nil {
 			return nil, nil, err
 		}
 	} else {
