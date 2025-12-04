@@ -14,6 +14,7 @@ package sriov
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -196,10 +197,14 @@ func setupKernelSriovContIface(contNetns ns.NetNS, contIface *current.Interface,
 	// if MAC address is provided, set it to the VF by using PF netlink
 	// which is accessible in the host namespace, not in the container namespace
 	if hwaddr != nil {
+		log.Printf("BGARTZIA: setting mac address")
 		if vdpaDevName != "" {
+			log.Printf("BGARTZIA: setting mac address to vdpa device")
 			if err := kvdpa.SetVdpaDeviceMac(vdpaDevName, hwaddr); err != nil {
+				fmt.Printf("BGARTZIA: there was en error")
 				return err
 			}
+			log.Printf("BGARTZIA: everything OK, GO")
 		} else {
 			if err := netlink.LinkSetVfHardwareAddr(pfLink, vfIdx, hwaddr); err != nil {
 				return err
@@ -314,6 +319,8 @@ func SetupSriovInterface(contNetns ns.NetNS, containerID, ifName, mac string, mt
 		vdpaDevName = vdpaDevs[0].Name()
 	}
 
+	log.Printf("BGARTZIA: vdpa dev name: %s", vdpaDevName)
+
 	// make sure PF netlink and VF index are valid
 	if len(pfLink.Attrs().Vfs) < vfIdx || pfLink.Attrs().Vfs[vfIdx].ID != vfIdx {
 		return nil, nil, fmt.Errorf("failed to get vf info from %s at index %d with Vfs %v", pfIface, vfIdx, pfLink.Attrs().Vfs)
@@ -341,6 +348,7 @@ func SetupSriovInterface(contNetns ns.NetNS, containerID, ifName, mac string, mt
 		if err = setupKernelSriovContIface(contNetns, contIface, deviceID, pfLink, vfIdx, ifName, hwaddr, mtu, vdpaDevName); err != nil {
 			return nil, nil, err
 		}
+		log.Printf("BGARTZIA: ran vf setup\n")
 	} else {
 		// configure the smart VF netdevice via PF netlink
 		if err = setupUserspaceSriovContIface(contNetns, contIface, pfLink, vfIdx, ifName, hwaddr); err != nil {

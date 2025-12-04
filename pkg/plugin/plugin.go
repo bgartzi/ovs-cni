@@ -271,11 +271,15 @@ func CmdAdd(args *skel.CmdArgs) error {
 		ovnPort = string(envArgs.OvnPort)
 		contPodUid = string(envArgs.K8S_POD_UID)
 	}
+	log.Printf("BGARTZIA: envargs? %#v\n", envArgs)
+	log.Printf("BGARTZIA: rawargs? %#v\n", args)
 
+	log.Printf("BGARTZIA: stdin: %s\n", string(args.StdinData))
 	netconf, err := config.LoadConf(args.StdinData)
 	if err != nil {
 		return err
 	}
+	log.Printf("BGARTZIA: netconf: %#v\n", *netconf)
 
 	var vlanTagNum uint = 0
 	trunks := make([]uint, 0)
@@ -340,6 +344,9 @@ func CmdAdd(args *skel.CmdArgs) error {
 		}
 	}
 
+	// Note: OrigIfName is used to reset VF name if it was changed and
+	// put into the pod network.
+	// Do we really need to do that for vDPA?
 	// Cache NetConf for CmdDel
 	if err = utils.SaveCache(config.GetCRef(args.ContainerID, args.IfName),
 		&types.CachedNetConf{Netconf: netconf, OrigIfName: origIfName, UserspaceMode: userspaceMode}); err != nil {
@@ -347,6 +354,7 @@ func CmdAdd(args *skel.CmdArgs) error {
 	}
 
 	var hostIface, contIface *current.Interface
+	log.Printf("BGARTZIA: isOvsHwOffload? %t", sriov.IsOvsHardwareOffloadEnabled(netconf.DeviceID))
 	if sriov.IsOvsHardwareOffloadEnabled(netconf.DeviceID) {
 		hostIface, contIface, err = sriov.SetupSriovInterface(contNetns, args.ContainerID, args.IfName, mac, netconf.MTU, netconf.DeviceID, userspaceMode)
 		if err != nil {
